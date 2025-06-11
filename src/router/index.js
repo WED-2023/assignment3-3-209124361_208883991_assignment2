@@ -1,90 +1,66 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import store from '@/store';
+import store from '../store/index.js';
 
 const routes = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('@/pages/MainPage.vue')
+    name: 'Home',
+    component: () => import('../pages/MainPage.vue')
   },
   {
     path: '/login',
-    name: 'login',
-    component: () => import('@/pages/LoginPage.vue'),
+    name: 'Login',
+    component: () => import('../pages/LoginPage.vue'),
     meta: { requiresGuest: true }
   },
   {
     path: '/register',
-    name: 'register',
-    component: () => import('@/pages/RegisterPage.vue'),
+    name: 'Register',
+    component: () => import('../pages/RegisterPage.vue'),
     meta: { requiresGuest: true }
-  },
-  {
-    path: '/search',
-    name: 'search',
-    component: () => import('@/pages/SearchPage.vue')
   },
   {
     path: '/recipe/:id',
     name: 'recipe',
-    component: () => import('@/pages/RecipeViewPage.vue'),
-    props: true
-  },
-  {
-    path: '/my-recipes',
-    name: 'my-recipes',
-    component: () => import('@/pages/MyRecipes.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/family-recipes',
-    name: 'family-recipes',
-    component: () => import('@/pages/FamilyRecipes.vue'),
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/profile',
-    name: 'profile',
-    component: () => import('@/pages/UserProfile.vue'),
+    component: () => import('../pages/RecipeViewPage.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/:pathMatch(.*)*',
-    name: 'not-found',
-    component: () => import('@/pages/NotFound.vue')
+    name: 'NotFound',
+    component: () => import('../pages/NotFound.vue')
   }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(process.env.BASE_URL),
   routes
 });
 
-// Navigation guards
-router.beforeEach((to, from, next) => {
-  const isLoggedIn = store.getters['auth/isLoggedIn'];
+router.beforeEach(async (to, from, next) => {
+  try {
+    // Only try to fetch user if we have a token
+    const token = localStorage.getItem('token');
+    if (token) {
+      await store.dispatch('auth/fetchUser');
+    }
 
-  // Check if route requires authentication
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!isLoggedIn) {
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath }
-      });
-    } else {
-      next();
+    const isLoggedIn = store.getters['auth/isLoggedIn'];
+
+    if (to.matched.some(record => record.meta.requiresAuth)) {
+      if (!isLoggedIn) {
+        return next({ path: '/login', query: { redirect: to.fullPath } });
+      }
+    } else if (to.matched.some(record => record.meta.requiresGuest)) {
+      if (isLoggedIn) {
+        return next({ path: '/' });
+      }
     }
-  }
-  // Check if route requires guest (not logged in)
-  else if (to.matched.some(record => record.meta.requiresGuest)) {
-    if (isLoggedIn) {
-      next({ path: '/' });
-    } else {
-      next();
-    }
-  }
-  else {
+
     next();
+  } catch (error) {
+    console.error('Navigation error:', error);
+    next('/');
   }
 });
 

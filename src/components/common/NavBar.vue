@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 
@@ -50,12 +50,35 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
+    const isInitialized = ref(false);
 
-    const isLoggedIn = computed(() => store.getters.isLoggedIn);
+    // Initialize auth state if needed
+    onMounted(async () => {
+      try {
+        // Only try to fetch user if we have a token
+        const token = localStorage.getItem('token');
+        if (token) {
+          await store.dispatch('auth/fetchUser');
+        }
+        isInitialized.value = true;
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        isInitialized.value = true; // Still mark as initialized even if there's an error
+      }
+    });
+
+    const isLoggedIn = computed(() => {
+      if (!isInitialized.value) return false;
+      try {
+        return store.state.auth?.token != null;
+      } catch (error) {
+        return false;
+      }
+    });
 
     const logout = async () => {
       try {
-        await store.dispatch('logout');
+        await store.dispatch('auth/logout');
         router.push('/login');
       } catch (error) {
         console.error('Logout failed:', error);

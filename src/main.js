@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-import store from './store';
+import store from './store/index.js';
 import axios from 'axios';
 import { createToaster } from '@meforma/vue-toaster';
 
@@ -15,13 +15,18 @@ axios.defaults.withCredentials = true;
 // Create Vue app
 const app = createApp(App);
 
-// Add plugins
-app.use(router);
+// Initialize store first
 app.use(store);
-app.use(createToaster({
+
+// Initialize router after store
+app.use(router);
+
+// Configure toaster
+const toaster = createToaster({
   position: 'top-right',
   duration: 3000
-}));
+});
+app.use(toaster);
 
 // Add global error handler
 app.config.errorHandler = (err, vm, info) => {
@@ -33,8 +38,6 @@ app.config.errorHandler = (err, vm, info) => {
 };
 
 // Add global properties
-app.config.globalProperties.$store = store;
-
 app.config.globalProperties.toast = function (title, content, variant = null, append = false) {
   const toastContainerId = "toast-container";
   let toastContainer = document.getElementById(toastContainerId);
@@ -75,3 +78,4 @@ app.config.globalProperties.toast = function (title, content, variant = null, ap
 
 // Mount app
 app.mount('#app');
+

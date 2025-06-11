@@ -29,74 +29,63 @@ const mutations = {
 const actions = {
   async login({ commit }, credentials) {
     try {
-      const response = await axios.post('/auth/login', credentials);
-      const { token, user } = response.data;
-      commit('SET_USER', user);
-      commit('SET_TOKEN', token);
-      return user;
+      const response = await axios.post('/login', credentials);
+      if (response.data.success) {
+        const { token, user } = response.data;
+        commit('SET_USER', user);
+        commit('SET_TOKEN', token);
+        return user;
+      } else {
+        throw new Error(response.data.message || 'Login failed');
+      }
     } catch (error) {
       throw error.response?.data?.message || 'Login failed';
     }
   },
 
-  async register({ commit }, userData) {
-    try {
-      const response = await axios.post('/auth/register', userData);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Registration failed';
-    }
+  async register(_, userData) {
+    const response = await axios.post('/register', userData);
+    return response.data;
   },
 
   async logout({ commit }) {
-    try {
-      await axios.post('/auth/logout');
-      commit('SET_USER', null);
-      commit('SET_TOKEN', null);
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    await axios.post('/logout');
+    commit('SET_USER', null);
+    commit('SET_TOKEN', null);
   },
 
   async fetchUser({ commit }) {
     try {
-      const response = await axios.get('/auth/user');
+      if (!state.token) {
+        commit('SET_USER', null);
+        return null;
+      }
+
+      const response = await axios.get('/user');
       commit('SET_USER', response.data);
       return response.data;
     } catch (error) {
       commit('SET_USER', null);
-      throw error.response?.data?.message || 'Failed to fetch user data';
+      return null;
     }
   },
 
   async updateProfile({ commit }, profileData) {
-    try {
-      const response = await axios.put('/auth/profile', profileData);
-      commit('SET_USER', response.data);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Failed to update profile';
-    }
+    const response = await axios.put('/api/auth/profile', profileData);
+    commit('SET_USER', response.data);
+    return response.data;
   },
 
   async updateSettings({ commit }, settings) {
-    try {
-      const response = await axios.put('/auth/settings', settings);
-      commit('SET_USER', response.data);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Failed to update settings';
-    }
+    const response = await axios.put('/api/auth/settings', settings);
+    commit('SET_USER', response.data);
+    return response.data;
   },
 
   async updatePreferences({ commit }, preferences) {
-    try {
-      const response = await axios.put('/auth/preferences', preferences);
-      commit('SET_USER', response.data);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data?.message || 'Failed to update preferences';
-    }
+    const response = await axios.put('/api/auth/preferences', preferences);
+    commit('SET_USER', response.data);
+    return response.data;
   }
 };
 
@@ -106,4 +95,4 @@ export default {
   getters,
   mutations,
   actions
-}; 
+};

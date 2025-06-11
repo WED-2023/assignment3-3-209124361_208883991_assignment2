@@ -1,11 +1,13 @@
 import { createStore } from 'vuex';
 import auth from './modules/auth';
 import recipes from './modules/recipes';
+import user from './modules/user';
 
 const store = createStore({
   modules: {
     auth,
-    recipes
+    recipes,
+    user
   },
   state: {
     loading: false,
@@ -36,4 +38,4 @@ const store = createStore({
   }
 });
 
-export default store; 
+export default store;

@@ -26,8 +26,8 @@
                     required
                     @blur="validateField('lastname')"
                   />
-                </div>
-              </div>
+        </div>
+      </div>
 
               <FormInput
                 v-model="form.username"
@@ -94,8 +94,8 @@
                 Already have an account? 
                 <router-link to="/login">Login here</router-link>
               </p>
-            </div>
-          </div>
+        </div>
+      </div>
         </div>
       </div>
     </div>

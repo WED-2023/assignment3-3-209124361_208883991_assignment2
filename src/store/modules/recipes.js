@@ -48,7 +48,7 @@ const mutations = {
 };
 
 const actions = {
-  async searchRecipes({ commit, state }, { query, cuisines, diets, intolerances, limit = 5, sort }) {
+  async searchRecipes({ commit }, { query, cuisines, diets, intolerances, limit = 5, sort }) {
     try {
       const response = await axios.get('/recipes/search', {
         params: {
@@ -99,7 +99,7 @@ const actions = {
     }
   },
 
-  async recordRecipeView({ commit }, recipeId) {
+  async recordRecipeView(_, recipeId) {
     try {
       await axios.post(`/recipes/${recipeId}/view`);
     } catch (error) {
