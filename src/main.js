@@ -1,26 +1,39 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import routes from './router/index';
+import router from './router';
+import store from './store';
 import axios from 'axios';
-import VueAxios from 'vue-axios';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createToaster } from '@meforma/vue-toaster';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.bundle.js';
 
-import store from './store';
+// Configure axios
+axios.defaults.baseURL = process.env.VUE_APP_API_URL;
+axios.defaults.withCredentials = true;
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes
-});
-
+// Create Vue app
 const app = createApp(App);
 
+// Add plugins
 app.use(router);
-app.use(VueAxios, axios);
+app.use(store);
+app.use(createToaster({
+  position: 'top-right',
+  duration: 3000
+}));
 
-app.config.globalProperties.store = store;
+// Add global error handler
+app.config.errorHandler = (err, vm, info) => {
+  console.error('Global error:', err);
+  console.error('Error info:', info);
+  if (store && store.dispatch) {
+    store.dispatch('setError', err.message || 'An error occurred');
+  }
+};
+
+// Add global properties
+app.config.globalProperties.$store = store;
 
 app.config.globalProperties.toast = function (title, content, variant = null, append = false) {
   const toastContainerId = "toast-container";
@@ -60,4 +73,5 @@ app.config.globalProperties.toast = function (title, content, variant = null, ap
   }, 3000);
 };
 
+// Mount app
 app.mount('#app');

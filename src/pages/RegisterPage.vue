@@ -1,80 +1,256 @@
 <template>
   <div class="register-page">
-    <h1>Register</h1>
-    <form @submit.prevent="register">
-      <div class="form-group">
-        <label>Username:</label>
-        <input v-model="state.username" type="text" class="form-control" />
-        <div v-if="v$.username.$error" class="text-danger">
-          Username is required.
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-body p-4">
+            <h2 class="text-center mb-4">Create Account</h2>
+            <form @submit.prevent="handleSubmit">
+              <div class="row">
+                <div class="col-md-6">
+                  <FormInput
+                    v-model="form.firstname"
+                    label="First Name"
+                    id="firstname"
+                    :error="errors.firstname"
+                    required
+                    @blur="validateField('firstname')"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <FormInput
+                    v-model="form.lastname"
+                    label="Last Name"
+                    id="lastname"
+                    :error="errors.lastname"
+                    required
+                    @blur="validateField('lastname')"
+                  />
+                </div>
+              </div>
+
+              <FormInput
+                v-model="form.username"
+                label="Username"
+                id="username"
+                :error="errors.username"
+                required
+                @blur="validateField('username')"
+              />
+
+              <FormInput
+                v-model="form.email"
+                type="email"
+                label="Email"
+                id="email"
+                :error="errors.email"
+                required
+                @blur="validateField('email')"
+              />
+
+              <FormInput
+                v-model="form.country"
+                label="Country"
+                id="country"
+                :error="errors.country"
+                required
+                @blur="validateField('country')"
+              />
+
+              <FormInput
+                v-model="form.password"
+                type="password"
+                label="Password"
+                id="password"
+                :error="errors.password"
+                required
+                @blur="validateField('password')"
+                helpText="Password must be at least 6 characters long"
+              />
+
+              <FormInput
+                v-model="form.confirmPassword"
+                type="password"
+                label="Confirm Password"
+                id="confirmPassword"
+                :error="errors.confirmPassword"
+                required
+                @blur="validateField('confirmPassword')"
+              />
+
+              <div class="d-grid gap-2 mt-4">
+                <button 
+                  type="submit" 
+                  class="btn btn-primary"
+                  :disabled="isLoading"
+                >
+                  <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  Register
+                </button>
+              </div>
+            </form>
+            <div class="text-center mt-3">
+              <p class="mb-0">
+                Already have an account? 
+                <router-link to="/login">Login here</router-link>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="form-group">
-        <label>Password:</label>
-        <input v-model="state.password" type="password" class="form-control" />
-        <div v-if="v$.password.$error" class="text-danger">
-          Password is required (at least 6 characters).
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Confirm Password:</label>
-        <input v-model="state.confirmPassword" type="password" class="form-control" />
-        <div v-if="v$.confirmPassword.$error" class="text-danger">
-          Passwords must match.
-        </div>
-      </div>
-      <button type="submit" class="btn btn-success mt-3">Register</button>
-    </form>
+    </div>
   </div>
 </template>
 
 <script>
-import { reactive } from 'vue';
-import { useVuelidate } from '@vuelidate/core';
-import { required, minLength, sameAs } from '@vuelidate/validators';
+import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
+import FormInput from '@/components/common/FormInput.vue';
 
 export default {
-  name: "RegisterPage",
-  setup(_, { expose }) {
-    const state = reactive({
+  name: 'RegisterPage',
+  components: {
+    FormInput
+  },
+  setup() {
+    const store = useStore();
+    const router = useRouter();
+    const isLoading = computed(() => store.getters.isLoading);
+
+    const form = ref({
+      firstname: '',
+      lastname: '',
       username: '',
+      email: '',
+      country: '',
       password: '',
-      confirmPassword: '',
+      confirmPassword: ''
     });
 
-    const rules = {
-      username: { required },
-      password: { required, minLength: minLength(6) },
-      confirmPassword: { required, sameAsPassword: sameAs(() => state.password) }
-    };
+    const errors = ref({
+      firstname: '',
+      lastname: '',
+      username: '',
+      email: '',
+      country: '',
+      password: '',
+      confirmPassword: ''
+    });
 
-    const v$ = useVuelidate(rules, state);
-
-    const register = async () => {
-      if (await v$.value.$validate()) {
-        try {
-          await window.axios.post('/register', {
-            username: state.username,
-            password: state.password
-          });
-          window.toast("Registration Successful", "You can now login", "success");
-          window.router.push('/login');
-        } catch (err) {
-          window.toast("Registration failed", err.response.data.message, "danger");
-        }
+    const validateField = (field) => {
+      errors.value[field] = '';
+      
+      switch (field) {
+        case 'firstname':
+          if (!form.value.firstname) {
+            errors.value.firstname = 'First name is required';
+          }
+          break;
+        case 'lastname':
+          if (!form.value.lastname) {
+            errors.value.lastname = 'Last name is required';
+          }
+          break;
+        case 'username':
+          if (!form.value.username) {
+            errors.value.username = 'Username is required';
+          } else if (form.value.username.length < 3) {
+            errors.value.username = 'Username must be at least 3 characters';
+          }
+          break;
+        case 'email':
+          if (!form.value.email) {
+            errors.value.email = 'Email is required';
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
+            errors.value.email = 'Please enter a valid email address';
+          }
+          break;
+        case 'country':
+          if (!form.value.country) {
+            errors.value.country = 'Country is required';
+          }
+          break;
+        case 'password':
+          if (!form.value.password) {
+            errors.value.password = 'Password is required';
+          } else if (form.value.password.length < 6) {
+            errors.value.password = 'Password must be at least 6 characters';
+          }
+          break;
+        case 'confirmPassword':
+          if (!form.value.confirmPassword) {
+            errors.value.confirmPassword = 'Please confirm your password';
+          }
+          break;
       }
     };
 
-    expose({ register });
+    const validateForm = () => {
+      Object.keys(form.value).forEach(field => validateField(field));
+      return !Object.values(errors.value).some(error => error);
+    };
 
-    return { state, v$, register };
+    const handleSubmit = async () => {
+      if (!validateForm()) return;
+
+      // Validate password match
+      if (form.value.password !== form.value.confirmPassword) {
+        errors.value.confirmPassword = 'Passwords do not match';
+        return;
+      }
+
+      try {
+        // Create user data without confirmPassword
+        // eslint-disable-next-line no-unused-vars
+        const { confirmPassword, ...userData } = form.value;
+        await store.dispatch('auth/register', userData);
+        router.push('/login');
+      } catch (error) {
+        store.dispatch('setError', error.message || 'Registration failed');
+      }
+    };
+
+    return {
+      form,
+      errors,
+      isLoading,
+      validateField,
+      handleSubmit
+    };
   }
 };
 </script>
 
 <style scoped>
 .register-page {
-  max-width: 400px;
-  margin: auto;
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+.card {
+  border: none;
+  border-radius: 1rem;
+}
+
+.card-body {
+  padding: 2rem;
+}
+
+h2 {
+  color: #333;
+  font-weight: 600;
+}
+
+.btn-primary {
+  padding: 0.75rem;
+  font-weight: 500;
+}
+
+.spinner-border {
+  width: 1rem;
+  height: 1rem;
 }
 </style>

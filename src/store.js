@@ -3,6 +3,7 @@ import { reactive } from 'vue';
 const store = reactive({
   username: localStorage.getItem('username'),
   server_domain: "http://localhost:3000",
+  // server_domain: "http://lior-adar.cs.bgu.ac.il",
 
   login(username) {
     localStorage.setItem('username', username);
