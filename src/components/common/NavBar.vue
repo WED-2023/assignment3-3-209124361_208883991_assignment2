@@ -55,9 +55,7 @@ export default {
     // Initialize auth state if needed
     onMounted(async () => {
       try {
-        // Only try to fetch user if we have a token
-        const token = localStorage.getItem('token');
-        if (token) {
+        if (!store.getters['auth/isInitialized']) {
           await store.dispatch('auth/fetchUser');
         }
         isInitialized.value = true;
@@ -69,11 +67,7 @@ export default {
 
     const isLoggedIn = computed(() => {
       if (!isInitialized.value) return false;
-      try {
-        return store.state.auth?.token != null;
-      } catch (error) {
-        return false;
-      }
+      return store.getters['auth/isLoggedIn'];
     });
 
     const logout = async () => {

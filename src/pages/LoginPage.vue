@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-lg-4">
+    <div class="row justify-content-center align-items-center min-vh-100">
+      <div class="col-md-10 col-lg-8">
         <div class="card shadow-sm">
           <div class="card-body p-4">
             <h2 class="text-center mb-4">Login</h2>
@@ -100,8 +100,11 @@ export default {
       if (!validateForm()) return;
 
       try {
-        await store.dispatch('auth/login', form.value);
-        router.push('/');
+        const redirectPath = router.currentRoute.value.query.redirect || '/';
+        await store.dispatch('auth/login', {
+          credentials: form.value,
+          redirectPath
+        });
       } catch (error) {
         store.dispatch('setError', error.message || 'Login failed');
       }
@@ -120,14 +123,20 @@ export default {
 
 <style scoped>
 .login-page {
-  min-height: calc(100vh - 200px);
+  min-height: 100vh;
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+  margin-top: -5rem;
 }
 
 .card {
   border: none;
   border-radius: 1rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .card-body {

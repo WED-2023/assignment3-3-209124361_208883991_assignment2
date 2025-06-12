@@ -20,7 +20,7 @@
     </section>
 
     <!-- Last Viewed Recipes -->
-    <section v-if="isLoggedIn && lastViewedRecipes.length > 0" class="mb-5">
+    <section v-if="isLoggedIn && lastViewedRecipes?.length > 0" class="mb-5">
       <h2 class="section-title mb-4">Recently Viewed</h2>
       <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         <div v-for="recipe in lastViewedRecipes" :key="recipe.id" class="col">
@@ -30,7 +30,7 @@
     </section>
 
     <!-- Family Recipes -->
-    <section v-if="isLoggedIn && familyRecipes.length > 0" class="mb-5">
+    <section v-if="isLoggedIn && familyRecipes?.length > 0" class="mb-5">
       <h2 class="section-title mb-4">Family Recipes</h2>
       <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
         <div v-for="recipe in familyRecipes" :key="recipe.id" class="col">

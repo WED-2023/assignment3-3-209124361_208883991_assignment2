@@ -204,8 +204,11 @@ export default {
         // Create user data without confirmPassword
         // eslint-disable-next-line no-unused-vars
         const { confirmPassword, ...userData } = form.value;
-        await store.dispatch('auth/register', userData);
-        router.push('/login');
+        const redirectPath = router.currentRoute.value.query.redirect || '/';
+        await store.dispatch('auth/register', {
+          userData,
+          redirectPath
+        });
       } catch (error) {
         store.dispatch('setError', error.message || 'Registration failed');
       }

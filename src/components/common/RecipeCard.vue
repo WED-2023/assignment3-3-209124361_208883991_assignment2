@@ -1,7 +1,7 @@
 <template>
   <div class="card recipe-card h-100">
     <img 
-      :src="recipe.image || '/default-recipe.jpg'" 
+      :src="imageUrl" 
       class="card-img-top" 
       :alt="recipe.title"
       @error="handleImageError"
@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
@@ -57,24 +57,29 @@ export default {
   },
   setup(props) {
     const store = useStore();
-    const isLoggedIn = computed(() => store.getters.isLoggedIn);
-    const isFavorite = computed(() => store.getters.isFavorite(props.recipe.id));
+    const isLoggedIn = computed(() => store.getters['auth/isLoggedIn']);
+    const isFavorite = computed(() => store.getters['recipes/isFavorite'](props.recipe.id));
+    
+    // Use a data URL for the default image to avoid 404 errors
+    const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+    const imageUrl = ref(props.recipe.image || defaultImage);
 
     const handleImageError = (e) => {
-      e.target.src = '/default-recipe.jpg';
+      e.target.src = defaultImage;
     };
 
     const toggleFavorite = () => {
       if (isFavorite.value) {
-        store.dispatch('removeFavorite', props.recipe.id);
+        store.dispatch('recipes/removeFromFavorites', props.recipe.id);
       } else {
-        store.dispatch('addFavorite', props.recipe);
+        store.dispatch('recipes/addToFavorites', props.recipe);
       }
     };
 
     return {
       isLoggedIn,
       isFavorite,
+      imageUrl,
       handleImageError,
       toggleFavorite
     };
@@ -96,6 +101,7 @@ export default {
 .card-img-top {
   height: 200px;
   object-fit: cover;
+  background-color: #f0f0f0;
 }
 
 .badge {

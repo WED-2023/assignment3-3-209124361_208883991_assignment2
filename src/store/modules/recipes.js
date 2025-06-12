@@ -4,7 +4,9 @@ const state = {
   recipes: [],
   favorites: JSON.parse(localStorage.getItem('favorites') || '[]'),
   lastViewed: [],
+  familyRecipes: [],
   currentRecipe: null,
+  totalResults: 0,
   filters: {
     query: '',
     cuisines: [],
@@ -14,17 +16,22 @@ const state = {
 };
 
 const getters = {
-  allRecipes: state => state.recipes,
-  favoriteRecipes: state => state.favorites,
-  lastViewedRecipes: state => state.lastViewed,
+  allRecipes: state => state.recipes || [],
+  favoriteRecipes: state => state.favorites || [],
+  lastViewedRecipes: state => state.lastViewed || [],
+  familyRecipes: state => state.familyRecipes || [],
   currentRecipe: state => state.currentRecipe,
   filters: state => state.filters,
-  isFavorite: state => recipeId => state.favorites.some(recipe => recipe.id === recipeId)
+  totalRecipes: state => state.totalResults,
+  isFavorite: state => recipeId => (state.favorites || []).some(recipe => recipe.id === recipeId)
 };
 
 const mutations = {
   SET_RECIPES(state, recipes) {
-    state.recipes = recipes;
+    state.recipes = recipes || [];
+  },
+  SET_TOTAL_RESULTS(state, total) {
+    state.totalResults = total;
   },
   SET_CURRENT_RECIPE(state, recipe) {
     state.currentRecipe = recipe;
@@ -40,7 +47,10 @@ const mutations = {
     localStorage.setItem('favorites', JSON.stringify(state.favorites));
   },
   SET_LAST_VIEWED(state, recipes) {
-    state.lastViewed = recipes;
+    state.lastViewed = recipes || [];
+  },
+  SET_FAMILY_RECIPES(state, recipes) {
+    state.familyRecipes = recipes || [];
   },
   SET_FILTERS(state, filters) {
     state.filters = { ...state.filters, ...filters };
@@ -48,22 +58,41 @@ const mutations = {
 };
 
 const actions = {
-  async searchRecipes({ commit }, { query, cuisines, diets, intolerances, limit = 5, sort }) {
+  async searchRecipes({ commit }, { query, cuisines, diets, intolerances, maxReadyTime, sort, offset, number }) {
     try {
-      const response = await axios.get('/recipes/search', {
-        params: {
-          query,
-          cuisines: cuisines.join(','),
-          diets: diets.join(','),
-          intolerances: intolerances.join(','),
-          limit,
-          sort
+      const params = {
+        query: query || '',
+        cuisines: cuisines?.join(','),
+        diets: diets?.join(','),
+        intolerances: intolerances?.join(','),
+        maxReadyTime,
+        sort,
+        offset,
+        number
+      };
+
+      // Remove undefined parameters
+      Object.keys(params).forEach(key => {
+        if (params[key] === undefined || params[key] === '') {
+          delete params[key];
         }
       });
-      commit('SET_RECIPES', response.data);
-      return response;
+
+      const response = await axios.get('/recipes/search', { params });
+      
+      // The server returns the results array directly
+      if (Array.isArray(response.data)) {
+        commit('SET_RECIPES', response.data);
+        commit('SET_TOTAL_RESULTS', response.data.length);
+      } else {
+        commit('SET_RECIPES', []);
+        commit('SET_TOTAL_RESULTS', 0);
+      }
     } catch (error) {
-      throw error.response?.data || error;
+      console.error('Error searching recipes:', error);
+      commit('SET_RECIPES', []);
+      commit('SET_TOTAL_RESULTS', 0);
+      throw error;
     }
   },
 
@@ -75,6 +104,8 @@ const actions = {
       commit('SET_RECIPES', response.data);
       return response;
     } catch (error) {
+      console.error('Error getting random recipes:', error);
+      commit('SET_RECIPES', []);
       throw error.response?.data || error;
     }
   },
@@ -85,6 +116,8 @@ const actions = {
       commit('SET_CURRENT_RECIPE', response.data);
       return response;
     } catch (error) {
+      console.error('Error getting recipe details:', error);
+      commit('SET_CURRENT_RECIPE', null);
       throw error.response?.data || error;
     }
   },
@@ -95,7 +128,9 @@ const actions = {
       commit('SET_LAST_VIEWED', response.data);
       return response;
     } catch (error) {
-      throw error.response?.data || error;
+      console.error('Error getting last viewed recipes:', error);
+      commit('SET_LAST_VIEWED', []);
+      return { data: [] };
     }
   },
 

@@ -10,7 +10,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.js';
 
 // Configure axios
 axios.defaults.baseURL = process.env.VUE_APP_API_URL;
-axios.defaults.withCredentials = true;
+axios.defaults.withCredentials = true; // Enable sending cookies with requests
+axios.defaults.headers.common['Content-Type'] = 'application/json';
 
 // Create Vue app
 const app = createApp(App);

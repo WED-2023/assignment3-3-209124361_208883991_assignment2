@@ -1,39 +1,46 @@
 import axios from 'axios';
+import router from '@/router';
 
 const state = {
   user: null,
-  token: localStorage.getItem('token') || null
+  redirectPath: null,
+  isInitialized: false
 };
 
 const getters = {
-  isLoggedIn: state => !!state.token,
-  currentUser: state => state.user
+  isLoggedIn: state => !!state.user,
+  currentUser: state => state.user,
+  redirectPath: state => state.redirectPath,
+  isInitialized: state => state.isInitialized
 };
 
 const mutations = {
   SET_USER(state, user) {
     state.user = user;
   },
-  SET_TOKEN(state, token) {
-    state.token = token;
-    if (token) {
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-    }
+  SET_REDIRECT_PATH(state, path) {
+    state.redirectPath = path;
+  },
+  SET_INITIALIZED(state, value) {
+    state.isInitialized = value;
   }
 };
 
 const actions = {
-  async login({ commit }, credentials) {
+  async login({ commit }, { credentials, redirectPath }) {
     try {
       const response = await axios.post('/login', credentials);
       if (response.data.success) {
-        const { token, user } = response.data;
+        const { user } = response.data;
         commit('SET_USER', user);
-        commit('SET_TOKEN', token);
+        commit('SET_REDIRECT_PATH', redirectPath);
+        
+        // Navigate to the redirect path or home
+        if (redirectPath) {
+          router.push(redirectPath);
+        } else {
+          router.push('/');
+        }
         return user;
       } else {
         throw new Error(response.data.message || 'Login failed');
@@ -43,29 +50,54 @@ const actions = {
     }
   },
 
-  async register(_, userData) {
-    const response = await axios.post('/register', userData);
-    return response.data;
+  async register(_, { userData, redirectPath }) {
+    try {
+      const response = await axios.post('/register', userData);
+      if (response.data.success) {
+        // After successful registration, automatically log in the user
+        await this.dispatch('auth/login', { 
+          credentials: {
+            username: userData.username,
+            password: userData.password
+          },
+          redirectPath
+        });
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.message || 'Registration failed';
+    }
   },
 
   async logout({ commit }) {
-    await axios.post('/logout');
-    commit('SET_USER', null);
-    commit('SET_TOKEN', null);
+    try {
+      await axios.post('/logout');
+      commit('SET_USER', null);
+      commit('SET_REDIRECT_PATH', null);
+      router.push('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear the user state even if the server request fails
+      commit('SET_USER', null);
+      commit('SET_REDIRECT_PATH', null);
+      router.push('/');
+    }
   },
 
   async fetchUser({ commit }) {
     try {
-      if (!state.token) {
-        commit('SET_USER', null);
-        return null;
-      }
-
       const response = await axios.get('/user');
       commit('SET_USER', response.data);
+      commit('SET_INITIALIZED', true);
       return response.data;
     } catch (error) {
-      commit('SET_USER', null);
+      // If we get a 404, it means there's no active session
+      if (error.response?.status === 404) {
+        commit('SET_USER', null);
+      } else {
+        console.error('Error fetching user:', error);
+      }
+      commit('SET_INITIALIZED', true);
       return null;
     }
   },

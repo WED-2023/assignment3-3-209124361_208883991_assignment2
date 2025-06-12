@@ -22,8 +22,13 @@ const routes = [
   {
     path: '/recipe/:id',
     name: 'recipe',
-    component: () => import('../pages/RecipeViewPage.vue'),
+    component: () => import('../pages/RecipeView.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/search',
+    name: 'Search',
+    component: () => import('../pages/SearchPage.vue')
   },
   {
     path: '/:pathMatch(.*)*',
@@ -39,9 +44,8 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   try {
-    // Only try to fetch user if we have a token
-    const token = localStorage.getItem('token');
-    if (token) {
+    // Only try to fetch user if we haven't initialized yet
+    if (!store.getters['auth/isInitialized']) {
       await store.dispatch('auth/fetchUser');
     }
 
@@ -49,11 +53,21 @@ router.beforeEach(async (to, from, next) => {
 
     if (to.matched.some(record => record.meta.requiresAuth)) {
       if (!isLoggedIn) {
-        return next({ path: '/login', query: { redirect: to.fullPath } });
+        // Store the attempted path for redirect after login
+        return next({ 
+          path: '/login', 
+          query: { redirect: to.fullPath },
+          replace: true 
+        });
       }
     } else if (to.matched.some(record => record.meta.requiresGuest)) {
       if (isLoggedIn) {
-        return next({ path: '/' });
+        // If user is already logged in, redirect to home or their intended destination
+        const redirectPath = to.query.redirect || '/';
+        return next({ 
+          path: redirectPath,
+          replace: true 
+        });
       }
     }
 

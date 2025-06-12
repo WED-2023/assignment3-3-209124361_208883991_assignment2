@@ -158,9 +158,10 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import RecipeCard from '@/components/common/RecipeCard.vue';
+import { useRoute } from 'vue-router';
 
 export default {
   name: 'SearchPage',
@@ -169,6 +170,7 @@ export default {
   },
   setup() {
     const store = useStore();
+    const route = useRoute();
     const searchQuery = ref('');
     const showFilters = ref(false);
     const loading = ref(false);
@@ -208,16 +210,18 @@ export default {
     ];
 
     const handleSearch = async () => {
-      if (!searchQuery.value.trim()) return;
-      
       loading.value = true;
       error.value = null;
       currentPage.value = 1;
 
       try {
         await store.dispatch('recipes/searchRecipes', {
-          query: searchQuery.value,
-          ...filters.value,
+          query: searchQuery.value.trim(),
+          cuisines: filters.value.cuisine ? [filters.value.cuisine] : [],
+          diets: filters.value.diet ? [filters.value.diet] : [],
+          intolerances: filters.value.intolerances ? [filters.value.intolerances] : [],
+          maxReadyTime: filters.value.maxReadyTime || undefined,
+          sort: filters.value.sortBy,
           offset: 0,
           number: itemsPerPage
         });
@@ -241,8 +245,12 @@ export default {
 
       try {
         await store.dispatch('recipes/searchRecipes', {
-          query: searchQuery.value,
-          ...filters.value,
+          query: searchQuery.value.trim(),
+          cuisines: filters.value.cuisine ? [filters.value.cuisine] : [],
+          diets: filters.value.diet ? [filters.value.diet] : [],
+          intolerances: filters.value.intolerances ? [filters.value.intolerances] : [],
+          maxReadyTime: filters.value.maxReadyTime || undefined,
+          sort: filters.value.sortBy,
           offset: (page - 1) * itemsPerPage,
           number: itemsPerPage
         });
@@ -252,6 +260,26 @@ export default {
         loading.value = false;
       }
     };
+
+    // Initialize search when component is mounted
+    onMounted(() => {
+      // Only perform initial search if there's a query in the URL or search input
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryParam = urlParams.get('query');
+      
+      if (queryParam) {
+        searchQuery.value = queryParam;
+        handleSearch();
+      }
+    });
+
+    // Watch for route query changes
+    watch(() => route.query, (newQuery) => {
+      if (newQuery.query) {
+        searchQuery.value = newQuery.query;
+        handleSearch();
+      }
+    });
 
     // Watch for route query changes
     watch(

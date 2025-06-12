@@ -54,9 +54,10 @@
         <!-- Recipe Image -->
         <div class="col-md-4 mb-4">
           <img
-            :src="recipe.image"
+            :src="imageUrl"
             :alt="recipe.title"
             class="img-fluid rounded recipe-image"
+            @error="handleImageError"
           />
         </div>
 
@@ -160,6 +161,14 @@ export default {
 
     const recipe = computed(() => store.getters['recipes/currentRecipe']);
     const isFavorite = computed(() => store.getters['recipes/isFavorite'](recipe.value?.id));
+    
+    // Use a data URL for the default image to avoid 404 errors
+    const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+    const imageUrl = ref(recipe.value?.image || defaultImage);
+
+    const handleImageError = (e) => {
+      e.target.src = defaultImage;
+    };
 
     const loadRecipe = async () => {
       loading.value = true;
@@ -167,14 +176,11 @@ export default {
 
       try {
         await store.dispatch('recipes/getRecipeDetails', route.params.id);
+        imageUrl.value = recipe.value?.image || defaultImage;
         
         // Record recipe view if user is logged in
         if (store.getters['auth/isLoggedIn']) {
-          const userId = store.getters['auth/currentUser'].id;
-          await store.dispatch('recipes/recordRecipeView', {
-            userId,
-            recipeId: route.params.id
-          });
+          await store.dispatch('recipes/recordRecipeView', route.params.id);
         }
       } catch (err) {
         error.value = 'Failed to load recipe details. Please try again.';
@@ -211,6 +217,8 @@ export default {
       error,
       recipe,
       isFavorite,
+      imageUrl,
+      handleImageError,
       toggleFavorite,
       printRecipe
     };
