@@ -31,6 +31,12 @@ const routes = [
     component: () => import('../pages/SearchPage.vue')
   },
   {
+    path: '/favorites',
+    name: 'Favorites',
+    component: () => import('../pages/Favorites.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../pages/NotFound.vue')

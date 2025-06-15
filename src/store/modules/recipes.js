@@ -54,6 +54,10 @@ const mutations = {
   },
   SET_FILTERS(state, filters) {
     state.filters = { ...state.filters, ...filters };
+  },
+  SET_FAVORITES(state, favorites) {
+    state.favorites = favorites;
+    localStorage.setItem('favorites', JSON.stringify(favorites));
   }
 };
 
@@ -82,7 +86,7 @@ const actions = {
       
       // The server returns the results array directly
       if (Array.isArray(response.data)) {
-        commit('SET_RECIPES', response.data);
+      commit('SET_RECIPES', response.data);
         commit('SET_TOTAL_RESULTS', response.data.length);
       } else {
         commit('SET_RECIPES', []);
@@ -142,12 +146,34 @@ const actions = {
     }
   },
 
-  addToFavorites({ commit }, recipe) {
-    commit('ADD_TO_FAVORITES', recipe);
+  async addToFavorites({ commit }, recipe) {
+    try {
+      await axios.post('/users/favorites', { recipeId: recipe.id });
+      commit('ADD_TO_FAVORITES', recipe);
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      throw error;
+    }
   },
 
-  removeFromFavorites({ commit }, recipeId) {
-    commit('REMOVE_FROM_FAVORITES', recipeId);
+  async removeFromFavorites({ commit }, recipeId) {
+    try {
+      await axios.delete(`/users/favorites/${recipeId}`);
+      commit('REMOVE_FROM_FAVORITES', recipeId);
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+      throw error;
+    }
+  },
+
+  async getFavorites({ commit }) {
+    try {
+      const response = await axios.get('/users/favorites');
+      commit('SET_FAVORITES', response.data);
+    } catch (error) {
+      console.error('Error getting favorites:', error);
+      throw error;
+    }
   },
 
   updateFilters({ commit }, filters) {

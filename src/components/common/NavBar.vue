@@ -17,6 +17,9 @@
             <router-link class="nav-link" to="/my-recipes">My Recipes</router-link>
           </li>
           <li v-if="isLoggedIn" class="nav-item">
+            <router-link class="nav-link" to="/favorites">Favorites</router-link>
+          </li>
+          <li v-if="isLoggedIn" class="nav-item">
             <router-link class="nav-link" to="/family-recipes">Family Recipes</router-link>
           </li>
         </ul>

@@ -197,12 +197,12 @@ export default {
 
       try {
         if (isFavorite.value) {
-          await store.dispatch('recipes/removeFavorite', recipe.value.id);
+          await store.dispatch('recipes/removeFromFavorites', recipe.value.id);
         } else {
-          await store.dispatch('recipes/addFavorite', recipe.value.id);
+          await store.dispatch('recipes/addToFavorites', recipe.value);
         }
       } catch (err) {
-        store.dispatch('setError', 'Failed to update favorites');
+        store.dispatch('setError', 'Failed to update favorite status');
       }
     };
 

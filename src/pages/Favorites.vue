@@ -1,7 +1,7 @@
 <template>
-  <div class="my-recipes">
+  <div class="favorites">
     <div class="container">
-      <h1 class="mb-4">My Recipes</h1>
+      <h1 class="mb-4">My Favorite Recipes</h1>
 
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-5">
@@ -17,7 +17,7 @@
 
       <!-- Empty State -->
       <div v-else-if="favoriteRecipes.length === 0" class="text-center py-5">
-        <h3>No saved recipes yet</h3>
+        <h3>No favorite recipes yet</h3>
         <p class="text-muted mb-4">
           Start exploring recipes and save your favorites to see them here.
         </p>
@@ -43,16 +43,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Last Viewed Recipes -->
-      <div v-if="lastViewedRecipes.length > 0" class="mt-5">
-        <h2 class="mb-4">Recently Viewed</h2>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          <div v-for="recipe in lastViewedRecipes" :key="recipe.id" class="col">
-            <RecipeCard :recipe="recipe" />
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -63,7 +53,7 @@ import { useStore } from 'vuex';
 import RecipeCard from '@/components/common/RecipeCard.vue';
 
 export default {
-  name: 'MyRecipes',
+  name: 'FavoritesPage',
   components: {
     RecipeCard
   },
@@ -73,20 +63,15 @@ export default {
     const error = ref(null);
 
     const favoriteRecipes = computed(() => store.getters['recipes/favoriteRecipes']);
-    const lastViewedRecipes = computed(() => store.getters['recipes/lastViewedRecipes']);
 
-    const loadUserRecipes = async () => {
+    const loadFavorites = async () => {
       loading.value = true;
       error.value = null;
 
       try {
-        const userId = store.getters['auth/currentUser'].id;
-        await Promise.all([
-          store.dispatch('recipes/getFavorites', userId),
-          store.dispatch('recipes/getLastViewed', userId)
-        ]);
+        await store.dispatch('recipes/getFavorites');
       } catch (err) {
-        error.value = 'Failed to load your recipes. Please try again.';
+        error.value = 'Failed to load favorite recipes. Please try again.';
       } finally {
         loading.value = false;
       }
@@ -100,13 +85,12 @@ export default {
       }
     };
 
-    onMounted(loadUserRecipes);
+    onMounted(loadFavorites);
 
     return {
       loading,
       error,
       favoriteRecipes,
-      lastViewedRecipes,
       removeFavorite
     };
   }
@@ -118,7 +102,7 @@ export default {
   margin-bottom: 2rem;
 }
 
-h1, h2 {
+h1 {
   color: #2c3e50;
   font-weight: 600;
 }
