@@ -26,8 +26,8 @@
                     required
                     @blur="validateField('lastname')"
                   />
-        </div>
-      </div>
+                </div>
+              </div>
 
               <FormInput
                 v-model="form.username"
@@ -48,14 +48,36 @@
                 @blur="validateField('email')"
               />
 
-              <FormInput
-                v-model="form.country"
-                label="Country"
-                id="country"
-                :error="errors.country"
-                required
-                @blur="validateField('country')"
-              />
+              <div class="mb-3">
+                <label for="country" class="form-label">Country</label>
+                <select
+                  v-model="form.country"
+                  class="form-select"
+                  id="country"
+                  :class="{ 'is-invalid': errors.country }"
+                  required
+                  @blur="validateField('country')"
+                  :disabled="isCountriesLoading"
+                >
+                  <option value="">
+                    {{ isCountriesLoading ? 'Loading countries...' : 'Select a country' }}
+                  </option>
+                  <option
+                    v-for="country in countries"
+                    :key="country.cca3"
+                    :value="country.name.common"
+                  >
+                    {{ country.name.common }}
+                  </option>
+                </select>
+                <div v-if="errors.country" class="invalid-feedback">
+                  {{ errors.country }}
+                </div>
+                <div v-if="isCountriesLoading" class="form-text">
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Loading countries...
+                </div>
+              </div>
 
               <FormInput
                 v-model="form.password"
@@ -82,7 +104,7 @@
                 <button 
                   type="submit" 
                   class="btn btn-primary"
-                  :disabled="isLoading"
+                  :disabled="isLoading || isCountriesLoading"
                 >
                   <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
                   Register
@@ -94,8 +116,8 @@
                 Already have an account? 
                 <router-link to="/login">Login here</router-link>
               </p>
-        </div>
-      </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -103,10 +125,11 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import FormInput from '@/components/common/FormInput.vue';
+import axios from 'axios';
 
 export default {
   name: 'RegisterPage',
@@ -117,6 +140,8 @@ export default {
     const store = useStore();
     const router = useRouter();
     const isLoading = computed(() => store.getters.isLoading);
+    const isCountriesLoading = ref(true);
+    const countries = ref([]);
 
     const form = ref({
       firstname: '',
@@ -136,6 +161,27 @@ export default {
       country: '',
       password: '',
       confirmPassword: ''
+    });
+
+const fetchCountries = async () => {
+  try {
+    isCountriesLoading.value = true;
+    const response = await axios.get('https://restcountries.com/v3.1/all?fields=name,cca3');
+    countries.value = response.data.sort((a, b) =>
+      a.name.common.localeCompare(b.name.common)
+    );
+  } catch (error) {
+    console.error('Error fetching countries:', error);
+    store.dispatch('setError', 'Failed to load countries. Please try again later.');
+    countries.value = [];
+  } finally {
+    isCountriesLoading.value = false;
+  }
+};
+
+
+    onMounted(async () => {
+      await fetchCountries();
     });
 
     const validateField = (field) => {
@@ -218,6 +264,8 @@ export default {
       form,
       errors,
       isLoading,
+      isCountriesLoading,
+      countries,
       validateField,
       handleSubmit
     };
@@ -247,13 +295,22 @@ h2 {
   font-weight: 600;
 }
 
-.btn-primary {
-  padding: 0.75rem;
-  font-weight: 500;
+.form-select {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #ced4da;
 }
 
-.spinner-border {
-  width: 1rem;
-  height: 1rem;
+.form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-select.is-invalid {
+  border-color: #dc3545;
+}
+
+.form-select.is-invalid:focus {
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
 }
 </style>

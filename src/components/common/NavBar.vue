@@ -101,7 +101,8 @@ export default {
     });
 
     const username = computed(() => {
-      return store.getters['auth/username'] || 'User';
+      const user = store.getters['auth/currentUser'];
+      return user?.username || 'User';
     });
 
     const logout = async () => {
