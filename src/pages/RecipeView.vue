@@ -83,15 +83,41 @@
           <!-- Instructions -->
           <div class="recipe-instructions mb-4">
             <h3>Instructions</h3>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="progress-info">
+                <span class="badge bg-primary">{{ completedStepsCount }} of {{ totalSteps }} steps completed</span>
+              </div>
+              <button 
+                class="btn btn-outline-secondary btn-sm"
+                @click="resetProgress"
+                :disabled="!hasProgress"
+              >
+                Reset Progress
+              </button>
+            </div>
             <div v-if="recipe.analyzedInstructions && recipe.analyzedInstructions[0]">
               <div
                 v-for="step in recipe.analyzedInstructions[0].steps"
                 :key="step.number"
                 class="instruction-step mb-3"
+                :class="{ 'completed': isStepCompleted(step.number) }"
               >
-                <div class="d-flex">
-                  <span class="step-number me-3">{{ step.number }}</span>
-                  <p class="mb-0">{{ step.step }}</p>
+                <div class="d-flex align-items-start">
+                  <div class="step-checkbox me-3">
+                    <input
+                      type="checkbox"
+                      :id="'step-' + step.number"
+                      :checked="isStepCompleted(step.number)"
+                      @change="toggleStep(step.number)"
+                      class="form-check-input"
+                    />
+                  </div>
+                  <div class="step-content flex-grow-1">
+                    <div class="d-flex align-items-center mb-2">
+                      <span class="step-number me-3">{{ step.number }}</span>
+                      <label :for="'step-' + step.number" class="mb-0 flex-grow-1">{{ step.step }}</label>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -161,7 +187,36 @@ export default {
 
     const recipe = computed(() => store.getters['recipes/currentRecipe']);
     const isFavorite = computed(() => store.getters['recipes/isFavorite'](recipe.value?.id));
+    const recipeProgress = computed(() => store.getters['recipes/getRecipeProgress'](route.params.id));
     
+    const totalSteps = computed(() => {
+      if (!recipe.value?.analyzedInstructions?.[0]?.steps) return 0;
+      return recipe.value.analyzedInstructions[0].steps.length;
+    });
+
+    const completedStepsCount = computed(() => {
+      return recipeProgress.value.completedSteps.length;
+    });
+
+    const hasProgress = computed(() => {
+      return recipeProgress.value.completedSteps.length > 0;
+    });
+
+    const isStepCompleted = (stepNumber) => {
+      return recipeProgress.value.completedSteps.includes(stepNumber);
+    };
+
+    const toggleStep = (stepNumber) => {
+      store.dispatch('recipes/toggleRecipeStep', {
+        recipeId: route.params.id,
+        stepNumber
+      });
+    };
+
+    const resetProgress = () => {
+      store.dispatch('recipes/resetRecipeProgress', route.params.id);
+    };
+
     // Use a data URL for the default image to avoid 404 errors
     const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
     const imageUrl = ref(recipe.value?.image || defaultImage);
@@ -220,7 +275,13 @@ export default {
       imageUrl,
       handleImageError,
       toggleFavorite,
-      printRecipe
+      printRecipe,
+      isStepCompleted,
+      toggleStep,
+      resetProgress,
+      totalSteps,
+      completedStepsCount,
+      hasProgress
     };
   }
 };
@@ -251,6 +312,15 @@ export default {
   padding: 1rem;
   background-color: #f8f9fa;
   border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.instruction-step.completed {
+  background-color: #e8f5e9;
+}
+
+.step-checkbox {
+  margin-top: 0.25rem;
 }
 
 .step-number {
@@ -265,17 +335,22 @@ export default {
   font-weight: bold;
 }
 
+.instruction-step.completed .step-number {
+  background-color: #28a745;
+}
+
+.progress-info {
+  font-size: 1.1rem;
+}
+
 @media print {
-  .btn {
+  .btn,
+  .form-check-input {
     display: none;
   }
 
-  .recipe-header {
-    border-bottom: none;
-  }
-
-  .recipe-image {
-    max-width: 300px;
+  .instruction-step {
+    background-color: transparent !important;
   }
 }
 </style> 

@@ -12,7 +12,8 @@ const state = {
     cuisines: [],
     diets: [],
     intolerances: []
-  }
+  },
+  recipeProgress: JSON.parse(localStorage.getItem('recipeProgress') || '{}')
 };
 
 const getters = {
@@ -23,7 +24,8 @@ const getters = {
   currentRecipe: state => state.currentRecipe,
   filters: state => state.filters,
   totalRecipes: state => state.totalResults,
-  isFavorite: state => recipeId => (state.favorites || []).some(recipe => recipe.id === recipeId)
+  isFavorite: state => recipeId => (state.favorites || []).some(recipe => recipe.id === recipeId),
+  getRecipeProgress: state => recipeId => state.recipeProgress[recipeId] || { completedSteps: [] }
 };
 
 const mutations = {
@@ -58,6 +60,30 @@ const mutations = {
   SET_FAVORITES(state, favorites) {
     state.favorites = favorites;
     localStorage.setItem('favorites', JSON.stringify(favorites));
+  },
+  SET_RECIPE_PROGRESS(state, { recipeId, completedSteps }) {
+    state.recipeProgress = {
+      ...state.recipeProgress,
+      [recipeId]: { completedSteps }
+    };
+    localStorage.setItem('recipeProgress', JSON.stringify(state.recipeProgress));
+  },
+  TOGGLE_RECIPE_STEP(state, { recipeId, stepNumber }) {
+    const progress = state.recipeProgress[recipeId] || { completedSteps: [] };
+    const completedSteps = [...progress.completedSteps];
+    const stepIndex = completedSteps.indexOf(stepNumber);
+    
+    if (stepIndex === -1) {
+      completedSteps.push(stepNumber);
+    } else {
+      completedSteps.splice(stepIndex, 1);
+    }
+    
+    state.recipeProgress = {
+      ...state.recipeProgress,
+      [recipeId]: { completedSteps }
+    };
+    localStorage.setItem('recipeProgress', JSON.stringify(state.recipeProgress));
   }
 };
 
@@ -178,6 +204,14 @@ const actions = {
 
   updateFilters({ commit }, filters) {
     commit('SET_FILTERS', filters);
+  },
+
+  toggleRecipeStep({ commit }, { recipeId, stepNumber }) {
+    commit('TOGGLE_RECIPE_STEP', { recipeId, stepNumber });
+  },
+  
+  resetRecipeProgress({ commit }, recipeId) {
+    commit('SET_RECIPE_PROGRESS', { recipeId, completedSteps: [] });
   }
 };
 
