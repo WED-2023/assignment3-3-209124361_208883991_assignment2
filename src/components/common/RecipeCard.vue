@@ -8,15 +8,20 @@
     >
     <div class="card-body">
       <h5 class="card-title">{{ recipe.title }}</h5>
-      <p v-if="recipe.readyInMinutes" class="card-text">
-        <i class="bi bi-clock"></i> {{ recipe.readyInMinutes }} minutes
-      </p>
-      <p v-if="recipe.servings" class="card-text">
-        <i class="bi bi-people"></i> {{ recipe.servings }} servings
-      </p>
-      <p v-if="recipe.aggregateLikes" class="card-text likes">
-        <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes }} likes
-      </p>
+      <div class="recipe-meta">
+        <p v-if="recipe.readyInMinutes" class="card-text">
+          <i class="bi bi-clock"></i> {{ recipe.readyInMinutes }} minutes
+        </p>
+        <p v-if="recipe.servings" class="card-text">
+          <i class="bi bi-people"></i> {{ recipe.servings }} servings
+        </p>
+        <p v-if="recipe.aggregateLikes" class="card-text likes">
+          <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes }} likes
+        </p>
+        <p v-if="isViewed" class="card-text viewed">
+          <i class="bi bi-eye-fill text-primary"></i> Viewed
+        </p>
+      </div>
       <div v-if="recipe.diets && recipe.diets.length" class="mb-2">
         <span 
           v-for="diet in recipe.diets" 
@@ -47,7 +52,7 @@
 </template>
 
 <script>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 
 export default {
@@ -62,6 +67,7 @@ export default {
     const store = useStore();
     const isLoggedIn = computed(() => store.getters['auth/isLoggedIn']);
     const isFavorite = computed(() => store.getters['recipes/isFavorite'](props.recipe.id));
+    const isViewed = computed(() => store.getters['recipes/isViewed'](props.recipe.id));
     
     // Use a data URL for the default image to avoid 404 errors
     const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
@@ -79,9 +85,16 @@ export default {
       }
     };
 
+    onMounted(async () => {
+      if (isLoggedIn.value) {
+        await store.dispatch('recipes/checkRecipeViewed', props.recipe.id);
+      }
+    });
+
     return {
       isLoggedIn,
       isFavorite,
+      isViewed,
       imageUrl,
       handleImageError,
       toggleFavorite
@@ -125,6 +138,15 @@ export default {
 }
 
 .bi-heart-fill {
+  margin-right: 0.25rem;
+}
+
+.viewed {
+  color: #0d6efd;
+  margin-bottom: 0.5rem;
+}
+
+.bi-eye-fill {
   margin-right: 0.25rem;
 }
 </style> 

@@ -13,7 +13,8 @@ const state = {
     diets: [],
     intolerances: []
   },
-  recipeProgress: JSON.parse(localStorage.getItem('recipeProgress') || '{}')
+  recipeProgress: JSON.parse(localStorage.getItem('recipeProgress') || '{}'),
+  viewedRecipes: new Set()
 };
 
 const getters = {
@@ -25,7 +26,8 @@ const getters = {
   filters: state => state.filters,
   totalRecipes: state => state.totalResults,
   isFavorite: state => recipeId => (state.favorites || []).some(recipe => recipe.id === recipeId),
-  getRecipeProgress: state => recipeId => state.recipeProgress[recipeId] || { completedSteps: [] }
+  getRecipeProgress: state => recipeId => state.recipeProgress[recipeId] || { completedSteps: [] },
+  isViewed: state => recipeId => state.viewedRecipes.has(recipeId)
 };
 
 const mutations = {
@@ -84,6 +86,12 @@ const mutations = {
       [recipeId]: { completedSteps }
     };
     localStorage.setItem('recipeProgress', JSON.stringify(state.recipeProgress));
+  },
+  SET_VIEWED_RECIPE(state, recipeId) {
+    state.viewedRecipes.add(recipeId);
+  },
+  SET_VIEWED_RECIPES(state, recipeIds) {
+    state.viewedRecipes = new Set(recipeIds);
   }
 };
 
@@ -212,6 +220,24 @@ const actions = {
   
   resetRecipeProgress({ commit }, recipeId) {
     commit('SET_RECIPE_PROGRESS', { recipeId, completedSteps: [] });
+  },
+
+  async checkRecipeViewed({ commit }, recipeId) {
+    try {
+      const response = await axios.get(`/recipes/${recipeId}/viewed`);
+      if (response.data.viewed) {
+        commit('SET_VIEWED_RECIPE', recipeId);
+      }
+      return response.data.viewed;
+    } catch (error) {
+      console.error('Error checking recipe viewed status:', error);
+      return false;
+    }
+  },
+
+  async checkRecipesViewed({ dispatch }, recipeIds) {
+    const viewedPromises = recipeIds.map(id => dispatch('checkRecipeViewed', id));
+    await Promise.all(viewedPromises);
   }
 };
 
