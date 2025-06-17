@@ -14,7 +14,8 @@ const state = {
     intolerances: []
   },
   recipeProgress: JSON.parse(localStorage.getItem('recipeProgress') || '{}'),
-  viewedRecipes: new Set()
+  viewedRecipes: new Set(),
+  lastSearch: JSON.parse(localStorage.getItem('lastSearch') || 'null')
 };
 
 const getters = {
@@ -27,15 +28,20 @@ const getters = {
   totalRecipes: state => state.totalResults,
   isFavorite: state => recipeId => (state.favorites || []).some(recipe => recipe.id === recipeId),
   getRecipeProgress: state => recipeId => state.recipeProgress[recipeId] || { completedSteps: [] },
-  isViewed: state => recipeId => state.viewedRecipes.has(recipeId)
+  isViewed: state => recipeId => state.viewedRecipes.has(recipeId),
+  lastSearch: state => state.lastSearch
 };
 
 const mutations = {
   SET_RECIPES(state, recipes) {
-    state.recipes = recipes || [];
+    state.recipes = recipes;
   },
   SET_TOTAL_RESULTS(state, total) {
     state.totalResults = total;
+  },
+  SET_LAST_SEARCH(state, searchParams) {
+    state.lastSearch = searchParams;
+    localStorage.setItem('lastSearch', JSON.stringify(searchParams));
   },
   SET_CURRENT_RECIPE(state, recipe) {
     state.currentRecipe = recipe;
@@ -118,9 +124,20 @@ const actions = {
 
       const response = await axios.get('/recipes/search', { params });
       
+      // Save the search parameters
+      commit('SET_LAST_SEARCH', {
+        query,
+        cuisines,
+        diets,
+        intolerances,
+        maxReadyTime,
+        sort,
+        number
+      });
+      
       // The server returns the results array directly
       if (Array.isArray(response.data)) {
-      commit('SET_RECIPES', response.data);
+        commit('SET_RECIPES', response.data);
         commit('SET_TOTAL_RESULTS', response.data.length);
       } else {
         commit('SET_RECIPES', []);

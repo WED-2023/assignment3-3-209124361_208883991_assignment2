@@ -5,7 +5,7 @@
       <div class="search-header mb-4">
         <h1 class="mb-4">Search Recipes</h1>
         <div class="row g-3">
-          <div class="col-md-8">
+          <div class="col-md-6">
             <div class="input-group">
               <input
                 type="text"
@@ -19,7 +19,14 @@
               </button>
             </div>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
+            <select class="form-select" v-model="itemsPerPage">
+              <option value="5">5 Results</option>
+              <option value="10">10 Results</option>
+              <option value="15">15 Results</option>
+            </select>
+          </div>
+          <div class="col-md-3">
             <button
               class="btn btn-outline-primary w-100"
               @click="showFilters = !showFilters"
@@ -36,40 +43,36 @@
         <div class="card">
           <div class="card-body">
             <div class="row g-3">
-              <!-- Cuisine Filter -->
               <div class="col-md-4">
                 <label class="form-label">Cuisine</label>
                 <select class="form-select" v-model="filters.cuisine">
-                  <option value="">All Cuisines</option>
+                  <option value="">Any Cuisine</option>
                   <option v-for="cuisine in cuisines" :key="cuisine" :value="cuisine">
                     {{ cuisine }}
                   </option>
                 </select>
               </div>
 
-              <!-- Diet Filter -->
               <div class="col-md-4">
                 <label class="form-label">Diet</label>
                 <select class="form-select" v-model="filters.diet">
-                  <option value="">All Diets</option>
+                  <option value="">Any Diet</option>
                   <option v-for="diet in diets" :key="diet" :value="diet">
                     {{ diet }}
                   </option>
                 </select>
               </div>
 
-              <!-- Intolerances Filter -->
               <div class="col-md-4">
                 <label class="form-label">Intolerances</label>
                 <select class="form-select" v-model="filters.intolerances">
-                  <option value="">No Restrictions</option>
+                  <option value="">None</option>
                   <option v-for="intolerance in intolerances" :key="intolerance" :value="intolerance">
                     {{ intolerance }}
                   </option>
                 </select>
               </div>
 
-              <!-- Max Ready Time Filter -->
               <div class="col-md-4">
                 <label class="form-label">Max Ready Time (minutes)</label>
                 <input
@@ -81,7 +84,6 @@
                 />
               </div>
 
-              <!-- Sort By Filter -->
               <div class="col-md-4">
                 <label class="form-label">Sort By</label>
                 <select class="form-select" v-model="filters.sortBy">
@@ -124,34 +126,6 @@
             <RecipeCard :recipe="recipe" />
           </div>
         </div>
-
-        <!-- Pagination -->
-        <div v-if="recipes.length > 0" class="pagination-section mt-4">
-          <nav aria-label="Recipe search results pages">
-            <ul class="pagination justify-content-center">
-              <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">
-                  Previous
-                </a>
-              </li>
-              <li
-                v-for="page in totalPages"
-                :key="page"
-                class="page-item"
-                :class="{ active: currentPage === page }"
-              >
-                <a class="page-link" href="#" @click.prevent="changePage(page)">
-                  {{ page }}
-                </a>
-              </li>
-              <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">
-                  Next
-                </a>
-              </li>
-            </ul>
-          </nav>
-        </div>
       </div>
     </div>
   </div>
@@ -175,8 +149,7 @@ export default {
     const showFilters = ref(false);
     const loading = ref(false);
     const error = ref(null);
-    const currentPage = ref(1);
-    const itemsPerPage = 9;
+    const itemsPerPage = ref(5);
 
     const filters = ref({
       cuisine: '',
@@ -187,8 +160,6 @@ export default {
     });
 
     const recipes = computed(() => store.getters['recipes/allRecipes']);
-    const totalRecipes = computed(() => store.getters['recipes/totalRecipes']);
-    const totalPages = computed(() => Math.ceil(totalRecipes.value / itemsPerPage));
 
     // Filter options
     const cuisines = [
@@ -212,7 +183,6 @@ export default {
     const handleSearch = async () => {
       loading.value = true;
       error.value = null;
-      currentPage.value = 1;
 
       try {
         await store.dispatch('recipes/searchRecipes', {
@@ -222,8 +192,7 @@ export default {
           intolerances: filters.value.intolerances ? [filters.value.intolerances] : [],
           maxReadyTime: filters.value.maxReadyTime || undefined,
           sort: filters.value.sortBy,
-          offset: 0,
-          number: itemsPerPage
+          number: itemsPerPage.value
         });
       } catch (err) {
         error.value = 'Failed to search recipes. Please try again.';
@@ -232,45 +201,28 @@ export default {
       }
     };
 
+    const loadLastSearch = async () => {
+      const lastSearch = store.getters['recipes/lastSearch'];
+      if (lastSearch) {
+        searchQuery.value = lastSearch.query || '';
+        filters.value.cuisine = lastSearch.cuisines?.[0] || '';
+        filters.value.diet = lastSearch.diets?.[0] || '';
+        filters.value.intolerances = lastSearch.intolerances?.[0] || '';
+        filters.value.maxReadyTime = lastSearch.maxReadyTime || '';
+        filters.value.sortBy = lastSearch.sort || 'popularity';
+        itemsPerPage.value = lastSearch.number || 5;
+        
+        await handleSearch();
+      }
+    };
+
     const applyFilters = () => {
       handleSearch();
     };
 
-    const changePage = async (page) => {
-      if (page < 1 || page > totalPages.value) return;
-      
-      currentPage.value = page;
-      loading.value = true;
-      error.value = null;
-
-      try {
-        await store.dispatch('recipes/searchRecipes', {
-          query: searchQuery.value.trim(),
-          cuisines: filters.value.cuisine ? [filters.value.cuisine] : [],
-          diets: filters.value.diet ? [filters.value.diet] : [],
-          intolerances: filters.value.intolerances ? [filters.value.intolerances] : [],
-          maxReadyTime: filters.value.maxReadyTime || undefined,
-          sort: filters.value.sortBy,
-          offset: (page - 1) * itemsPerPage,
-          number: itemsPerPage
-        });
-      } catch (err) {
-        error.value = 'Failed to load recipes. Please try again.';
-      } finally {
-        loading.value = false;
-      }
-    };
-
     // Initialize search when component is mounted
-    onMounted(() => {
-      // Only perform initial search if there's a query in the URL or search input
-      const urlParams = new URLSearchParams(window.location.search);
-      const queryParam = urlParams.get('query');
-      
-      if (queryParam) {
-        searchQuery.value = queryParam;
-        handleSearch();
-      }
+    onMounted(async () => {
+      await loadLastSearch();
     });
 
     // Watch for route query changes
@@ -299,18 +251,16 @@ export default {
     return {
       searchQuery,
       showFilters,
-      filters,
       loading,
       error,
       recipes,
-      currentPage,
-      totalPages,
+      filters,
       cuisines,
       diets,
       intolerances,
+      itemsPerPage,
       handleSearch,
-      applyFilters,
-      changePage
+      applyFilters
     };
   }
 };
