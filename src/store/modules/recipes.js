@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const state = {
   recipes: [],
+  randomRecipes: [],
   favorites: JSON.parse(localStorage.getItem('favorites') || '[]'),
   lastViewed: [],
   familyRecipes: [],
@@ -20,6 +21,7 @@ const state = {
 
 const getters = {
   allRecipes: state => state.recipes || [],
+  randomRecipes: state => state.randomRecipes || [],
   favoriteRecipes: state => state.favorites || [],
   lastViewedRecipes: state => state.lastViewed || [],
   familyRecipes: state => state.familyRecipes || [],
@@ -35,6 +37,9 @@ const getters = {
 const mutations = {
   SET_RECIPES(state, recipes) {
     state.recipes = recipes;
+  },
+  SET_RANDOM_RECIPES(state, recipes) {
+    state.randomRecipes = recipes;
   },
   SET_TOTAL_RESULTS(state, total) {
     state.totalResults = total;
@@ -156,11 +161,11 @@ const actions = {
       const response = await axios.get('/recipes/random', {
         params: { number, tags }
       });
-      commit('SET_RECIPES', response.data);
+      commit('SET_RANDOM_RECIPES', response.data);
       return response;
     } catch (error) {
       console.error('Error getting random recipes:', error);
-      commit('SET_RECIPES', []);
+      commit('SET_RANDOM_RECIPES', []);
       throw error.response?.data || error;
     }
   },

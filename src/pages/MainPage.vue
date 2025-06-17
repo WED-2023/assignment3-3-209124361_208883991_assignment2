@@ -1,43 +1,47 @@
 <template>
-  <div class="main-page">
-    <!-- Hero Section -->
-    <div class="hero-section text-center py-5 mb-5">
-      <h1 class="display-4 mb-3">Welcome to Recipe App</h1>
-      <p class="lead mb-4">Discover, cook, and share your favorite recipes</p>
-      <router-link to="/search" class="btn btn-primary btn-lg">
-        Start Exploring
-      </router-link>
+  <div class="main-page container py-4">
+    <div class="row">
+      <!-- Left Column: Random Recipes -->
+      <div class="col-md-6">
+        <div class="random-recipes-section">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title mb-0">Explore These Recipes</h2>
+            <button @click="refreshRandomRecipes" class="btn btn-outline-primary">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+          <div class="row g-4">
+            <div v-for="recipe in randomRecipes" :key="recipe.id" class="col-12">
+              <RecipeCard :recipe="recipe" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Last Watched or Login Prompt -->
+      <div class="col-md-6">
+        <div class="last-watched-section">
+          <template v-if="isLoggedIn">
+            <h2 class="section-title mb-4">Last Watched Recipes</h2>
+            <div class="row g-4">
+              <div v-for="recipe in lastViewedRecipes" :key="recipe.id" class="col-12">
+                <RecipeCard :recipe="recipe" />
+              </div>
+            </div>
+          </template>
+          <template v-else>
+            <div class="login-prompt text-center p-5">
+              <h2 class="mb-4">Want to see your recently viewed recipes?</h2>
+              <p class="mb-4">Log in to keep track of your favorite recipes and view your history.</p>
+              <div class="d-flex justify-content-center gap-3">
+                <router-link to="/login" class="btn btn-primary">Login</router-link>
+                <router-link to="/register" class="btn btn-outline-primary">Register</router-link>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
     </div>
-
-    <!-- Featured Recipes -->
-    <section class="mb-5">
-      <h2 class="section-title mb-4">Featured Recipes</h2>
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <div v-for="recipe in featuredRecipes" :key="recipe.id" class="col">
-          <RecipeCard :recipe="recipe" />
-        </div>
-      </div>
-    </section>
-
-    <!-- Last Viewed Recipes -->
-    <section v-if="isLoggedIn && lastViewedRecipes?.length > 0" class="mb-5">
-      <h2 class="section-title mb-4">Recently Viewed</h2>
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <div v-for="recipe in lastViewedRecipes" :key="recipe.id" class="col">
-          <RecipeCard :recipe="recipe" />
-        </div>
-      </div>
-    </section>
-
-    <!-- Family Recipes -->
-    <section v-if="isLoggedIn && familyRecipes?.length > 0" class="mb-5">
-      <h2 class="section-title mb-4">Family Recipes</h2>
-      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <div v-for="recipe in familyRecipes" :key="recipe.id" class="col">
-          <RecipeCard :recipe="recipe" />
-        </div>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -54,55 +58,53 @@ export default {
   setup() {
     const store = useStore();
     const isLoggedIn = computed(() => store.getters['auth/isLoggedIn']);
-    const featuredRecipes = computed(() => store.getters['recipes/allRecipes']);
+    const randomRecipes = computed(() => store.getters['recipes/randomRecipes']);
     const lastViewedRecipes = computed(() => store.getters['recipes/lastViewedRecipes']);
-    const familyRecipes = computed(() => store.getters['recipes/familyRecipes']);
 
-    onMounted(async () => {
+    const loadRandomRecipes = async () => {
       try {
-        // Load featured recipes
-        await store.dispatch('recipes/getRandomRecipes', { number: 6 });
-        
-        // Load last viewed recipes if user is logged in
-        if (isLoggedIn.value) {
+        await store.dispatch('recipes/getRandomRecipes', { number: 3 });
+      } catch (error) {
+        store.dispatch('setError', 'Failed to load random recipes');
+      }
+    };
+
+    const loadLastViewedRecipes = async () => {
+      if (isLoggedIn.value) {
+        try {
           const userId = store.getters['auth/currentUser']?.id;
           if (userId) {
             await store.dispatch('recipes/getLastViewed', userId);
           }
+        } catch (error) {
+          store.dispatch('setError', 'Failed to load last viewed recipes');
         }
-      } catch (error) {
-        store.dispatch('setError', 'Failed to load recipes');
       }
+    };
+
+    const refreshRandomRecipes = () => {
+      loadRandomRecipes();
+    };
+
+    onMounted(async () => {
+      await loadRandomRecipes();
+      await loadLastViewedRecipes();
     });
 
     return {
       isLoggedIn,
-      featuredRecipes,
+      randomRecipes,
       lastViewedRecipes,
-      familyRecipes
+      refreshRandomRecipes
     };
   }
 };
 </script>
 
 <style scoped>
-.hero-section {
-  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('@/assets/logo.png');
-  background-size: cover;
-  background-position: center;
-  height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
 .section-title {
   position: relative;
   padding-bottom: 0.5rem;
-  margin-bottom: 2rem;
   font-weight: 600;
 }
 
@@ -116,8 +118,18 @@ export default {
   background-color: #0d6efd;
 }
 
-.btn-lg {
-  padding: 0.75rem 2rem;
+.login-prompt {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+  padding: 0.5rem 1.5rem;
   font-weight: 500;
+}
+
+.gap-3 {
+  gap: 1rem;
 }
 </style>

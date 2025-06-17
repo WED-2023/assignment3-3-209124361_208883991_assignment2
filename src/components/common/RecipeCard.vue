@@ -15,8 +15,8 @@
         <p v-if="recipe.servings" class="card-text">
           <i class="bi bi-people"></i> {{ recipe.servings }} servings
         </p>
-        <p v-if="recipe.aggregateLikes" class="card-text likes">
-          <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes }} likes
+        <p class="card-text likes">
+          <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes || 0 }} likes
         </p>
         <p v-if="isViewed" class="card-text viewed">
           <i class="bi bi-eye-fill text-primary"></i> Viewed
@@ -132,9 +132,14 @@ export default {
   font-size: 1.2rem;
 }
 
+.recipe-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .likes {
   color: #6c757d;
-  margin-bottom: 0.5rem;
 }
 
 .bi-heart-fill {
@@ -143,7 +148,6 @@ export default {
 
 .viewed {
   color: #0d6efd;
-  margin-bottom: 0.5rem;
 }
 
 .bi-eye-fill {
