@@ -14,6 +14,9 @@
       <p v-if="recipe.servings" class="card-text">
         <i class="bi bi-people"></i> {{ recipe.servings }} servings
       </p>
+      <p v-if="recipe.aggregateLikes" class="card-text likes">
+        <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes }} likes
+      </p>
       <div v-if="recipe.diets && recipe.diets.length" class="mb-2">
         <span 
           v-for="diet in recipe.diets" 
@@ -114,5 +117,14 @@ export default {
 
 .bi {
   font-size: 1.2rem;
+}
+
+.likes {
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+.bi-heart-fill {
+  margin-right: 0.25rem;
 }
 </style> 
