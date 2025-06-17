@@ -87,7 +87,7 @@
                 :error="errors.password"
                 required
                 @blur="validateField('password')"
-                helpText="Password must be at least 6 characters long"
+                helpText="Password must be between 5-10 characters and contain at least one number and one special character"
               />
 
               <FormInput
@@ -127,7 +127,6 @@
 <script>
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
 import FormInput from '@/components/common/FormInput.vue';
 import axios from 'axios';
 
@@ -138,7 +137,6 @@ export default {
   },
   setup() {
     const store = useStore();
-    const router = useRouter();
     const isLoading = computed(() => store.getters.isLoading);
     const isCountriesLoading = ref(true);
     const countries = ref([]);
@@ -184,7 +182,7 @@ const fetchCountries = async () => {
       await fetchCountries();
     });
 
-    const validateField = (field) => {
+    const validateField = async (field) => {
       errors.value[field] = '';
       
       switch (field) {
@@ -201,8 +199,21 @@ const fetchCountries = async () => {
         case 'username':
           if (!form.value.username) {
             errors.value.username = 'Username is required';
-          } else if (form.value.username.length < 3) {
-            errors.value.username = 'Username must be at least 3 characters';
+          } else if (form.value.username.length < 3 || form.value.username.length > 8) {
+            errors.value.username = 'Username must be between 3 and 8 characters';
+          } else if (!/^[a-zA-Z]+$/.test(form.value.username)) {
+            errors.value.username = 'Username can only contain alphabetic characters';
+          } else {
+            try {
+              // Check if username is already taken
+              const response = await axios.get(`/users/check-username/${form.value.username}`);
+              if (response.data.exists) {
+                errors.value.username = 'This username is already taken';
+              }
+            } catch (error) {
+              console.error('Error checking username:', error);
+              store.dispatch('setError', 'Failed to verify username availability');
+            }
           }
           break;
         case 'email':
@@ -220,8 +231,12 @@ const fetchCountries = async () => {
         case 'password':
           if (!form.value.password) {
             errors.value.password = 'Password is required';
-          } else if (form.value.password.length < 6) {
-            errors.value.password = 'Password must be at least 6 characters';
+          } else if (form.value.password.length < 5 || form.value.password.length > 10) {
+            errors.value.password = 'Password must be between 5 and 10 characters';
+          } else if (!/\d/.test(form.value.password)) {
+            errors.value.password = 'Password must contain at least one number';
+          } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(form.value.password)) {
+            errors.value.password = 'Password must contain at least one special character';
           }
           break;
         case 'confirmPassword':
@@ -250,10 +265,9 @@ const fetchCountries = async () => {
         // Create user data without confirmPassword
         // eslint-disable-next-line no-unused-vars
         const { confirmPassword, ...userData } = form.value;
-        const redirectPath = router.currentRoute.value.query.redirect || '/';
         await store.dispatch('auth/register', {
           userData,
-          redirectPath
+          redirectPath: '/login'  // Always redirect to login page after registration
         });
       } catch (error) {
         store.dispatch('setError', error.message || 'Registration failed');
