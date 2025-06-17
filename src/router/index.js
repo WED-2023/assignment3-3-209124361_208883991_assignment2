@@ -13,6 +13,12 @@ const routes = [
     component: () => import('../pages/AboutPage.vue')
   },
   {
+    path: '/create-recipe',
+    name: 'CreateRecipe',
+    component: () => import('../pages/CreateRecipe.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/login',
     name: 'Login',
     component: () => import('../pages/LoginPage.vue'),
