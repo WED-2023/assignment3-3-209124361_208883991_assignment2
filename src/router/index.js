@@ -48,6 +48,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/my-recipes',
+    name: 'MyRecipes',
+    component: () => import('../pages/MyRecipes.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/my-recipes/:id',
+    name: 'UserRecipeView',
+    component: () => import('../pages/UserRecipeView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../pages/NotFound.vue')

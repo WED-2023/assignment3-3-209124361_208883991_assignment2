@@ -26,13 +26,13 @@
         </div>
 
         <div class="mb-3">
-          <label for="recipeImage" class="form-label">Image URL</label>
+          <label for="recipeImage" class="form-label">Image (optional)</label>
           <input
-            type="url"
+            type="file"
             class="form-control"
             id="recipeImage"
-            v-model="recipe.image"
-            required
+            accept="image/*"
+            @change="onImageChange"
           >
         </div>
 
@@ -100,6 +100,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { createUserRecipe } from '../services/userRecipes';
 
 export default {
   name: 'CreateRecipe',
@@ -108,23 +109,46 @@ export default {
     const recipe = ref({
       name: '',
       description: '',
-      image: '',
       time: '',
       servings: '',
       ingredients: '',
       instructions: ''
     });
+    const imageFile = ref(null);
+
+    const onImageChange = (e) => {
+      const file = e.target.files[0];
+      imageFile.value = file || null;
+    };
 
     const handleSubmit = async () => {
       try {
-        // TODO: Implement recipe creation logic
-        console.log('Recipe data:', recipe.value);
-        // After successful creation, redirect to the recipe page
-        // router.push(`/recipe/${newRecipeId}`);
+        let photos = [];
+        if (imageFile.value) {
+          photos = [await toBase64(imageFile.value)];
+        }
+        const payload = {
+          title: recipe.value.name,
+          description: recipe.value.description,
+          ingredients: recipe.value.ingredients.split('\n').filter(Boolean),
+          instructions: recipe.value.instructions.split('\n').filter(Boolean),
+          photos
+        };
+        await createUserRecipe(payload);
+        router.push('/my-recipes');
       } catch (error) {
         console.error('Failed to create recipe:', error);
       }
     };
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    }
 
     const goBack = () => {
       router.back();
@@ -133,7 +157,8 @@ export default {
     return {
       recipe,
       handleSubmit,
-      goBack
+      goBack,
+      onImageChange
     };
   }
 };

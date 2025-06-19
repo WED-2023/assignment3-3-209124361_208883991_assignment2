@@ -16,40 +16,21 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="favoriteRecipes.length === 0" class="text-center py-5">
-        <h3>No saved recipes yet</h3>
+      <div v-else-if="userRecipes.length === 0" class="text-center py-5">
+        <h3>No personal recipes yet</h3>
         <p class="text-muted mb-4">
-          Start exploring recipes and save your favorites to see them here.
+          Create your own recipes to see them here.
         </p>
-        <router-link to="/search" class="btn btn-primary">
-          Browse Recipes
+        <router-link to="/create-recipe" class="btn btn-primary">
+          Create Recipe
         </router-link>
       </div>
 
       <!-- Recipes Grid -->
       <div v-else class="recipes-grid">
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          <div v-for="recipe in favoriteRecipes" :key="recipe.id" class="col">
-            <RecipeCard :recipe="recipe">
-              <template #actions>
-                <button
-                  class="btn btn-outline-danger btn-sm"
-                  @click="removeFavorite(recipe.id)"
-                >
-                  <i class="bi bi-trash"></i> Remove
-                </button>
-              </template>
-            </RecipeCard>
-          </div>
-        </div>
-      </div>
-
-      <!-- Last Viewed Recipes -->
-      <div v-if="lastViewedRecipes.length > 0" class="mt-5">
-        <h2 class="mb-4">Recently Viewed</h2>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-          <div v-for="recipe in lastViewedRecipes" :key="recipe.id" class="col">
-            <RecipeCard :recipe="recipe" />
+          <div v-for="recipe in userRecipes" :key="recipe.recipe_id" class="col">
+            <UserRecipePreview :recipe="recipe" @view="goToRecipe" />
           </div>
         </div>
       </div>
@@ -58,33 +39,28 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
-import { useStore } from 'vuex';
-import RecipeCard from '@/components/common/RecipeCard.vue';
+import { ref, onMounted } from 'vue';
+import UserRecipePreview from '@/components/common/UserRecipePreview.vue';
+import { getUserRecipes } from '../services/userRecipes';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'MyRecipes',
   components: {
-    RecipeCard
+    UserRecipePreview
   },
   setup() {
-    const store = useStore();
     const loading = ref(true);
     const error = ref(null);
-
-    const favoriteRecipes = computed(() => store.getters['recipes/favoriteRecipes']);
-    const lastViewedRecipes = computed(() => store.getters['recipes/lastViewedRecipes']);
+    const userRecipes = ref([]);
+    const router = useRouter();
 
     const loadUserRecipes = async () => {
       loading.value = true;
       error.value = null;
-
       try {
-        const userId = store.getters['auth/currentUser'].id;
-        await Promise.all([
-          store.dispatch('recipes/getFavorites', userId),
-          store.dispatch('recipes/getLastViewed', userId)
-        ]);
+        const response = await getUserRecipes();
+        userRecipes.value = response.data || [];
       } catch (err) {
         error.value = 'Failed to load your recipes. Please try again.';
       } finally {
@@ -92,12 +68,8 @@ export default {
       }
     };
 
-    const removeFavorite = async (recipeId) => {
-      try {
-        await store.dispatch('recipes/removeFromFavorites', recipeId);
-      } catch (err) {
-        store.dispatch('setError', 'Failed to remove recipe from favorites');
-      }
+    const goToRecipe = (recipe) => {
+      router.push(`/my-recipes/${recipe.recipe_id}`);
     };
 
     onMounted(loadUserRecipes);
@@ -105,9 +77,8 @@ export default {
     return {
       loading,
       error,
-      favoriteRecipes,
-      lastViewedRecipes,
-      removeFavorite
+      userRecipes,
+      goToRecipe
     };
   }
 };
