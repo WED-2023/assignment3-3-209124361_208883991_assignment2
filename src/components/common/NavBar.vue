@@ -126,6 +126,20 @@ export default {
 <style scoped>
 .navbar {
   margin-bottom: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 1050; /* Above most content, below modals */
+  width: 100%;
+}
+
+/* Fallback for browsers that don't support sticky */
+@supports not (position: sticky) {
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
 }
 
 .nav-link {
