@@ -69,13 +69,16 @@
           <!-- Ingredients -->
           <div class="recipe-ingredients mb-4">
             <h3>Ingredients</h3>
-            <ul class="list-group">
+            <div v-if="!recipe.ingredients || recipe.ingredients.length === 0" class="alert alert-info">
+              No ingredients information available for this recipe.
+            </div>
+            <ul v-else class="list-group">
               <li
-                v-for="ingredient in recipe.extendedIngredients"
-                :key="ingredient.id"
+                v-for="ingredient in recipe.ingredients"
+                :key="ingredient.id || ingredient.name"
                 class="list-group-item"
               >
-                {{ ingredient.amount }} {{ ingredient.unit }} {{ ingredient.originalName }}
+                {{ ingredient.amount || '' }} {{ ingredient.unit || '' }} {{ ingredient.originalName || ingredient.name }}
               </li>
             </ul>
           </div>
@@ -231,6 +234,7 @@ export default {
 
       try {
         await store.dispatch('recipes/getRecipeDetails', route.params.id);
+        console.log('Recipe data received:', recipe.value);
         imageUrl.value = recipe.value?.image || defaultImage;
         
         // Record recipe view if user is logged in
@@ -238,6 +242,7 @@ export default {
           await store.dispatch('recipes/recordRecipeView', route.params.id);
         }
       } catch (err) {
+        console.error('Error loading recipe:', err);
         error.value = 'Failed to load recipe details. Please try again.';
       } finally {
         loading.value = false;

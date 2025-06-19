@@ -185,8 +185,20 @@ const actions = {
   async getLastViewed({ commit }, userId) {
     try {
       const response = await axios.get(`/recipes/${userId}/search/last`);
-      commit('SET_LAST_VIEWED', response.data);
-      return response;
+      // Get full details for each last viewed recipe
+      const lastViewedWithDetails = await Promise.all(
+        response.data.map(async (recipe) => {
+          try {
+            const detailsResponse = await axios.get(`/recipes/${recipe.id}`);
+            return detailsResponse.data;
+          } catch (error) {
+            console.error(`Error getting details for recipe ${recipe.id}:`, error);
+            return recipe;
+          }
+        })
+      );
+      commit('SET_LAST_VIEWED', lastViewedWithDetails);
+      return { data: lastViewedWithDetails };
     } catch (error) {
       console.error('Error getting last viewed recipes:', error);
       commit('SET_LAST_VIEWED', []);
@@ -225,7 +237,19 @@ const actions = {
   async getFavorites({ commit }) {
     try {
       const response = await axios.get('/users/favorites');
-      commit('SET_FAVORITES', response.data);
+      // Get full details for each favorite recipe
+      const favoritesWithDetails = await Promise.all(
+        response.data.map(async (recipe) => {
+          try {
+            const detailsResponse = await axios.get(`/recipes/${recipe.id}`);
+            return detailsResponse.data;
+          } catch (error) {
+            console.error(`Error getting details for recipe ${recipe.id}:`, error);
+            return recipe;
+          }
+        })
+      );
+      commit('SET_FAVORITES', favoritesWithDetails);
     } catch (error) {
       console.error('Error getting favorites:', error);
       throw error;

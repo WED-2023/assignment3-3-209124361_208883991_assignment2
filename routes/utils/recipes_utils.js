@@ -13,21 +13,27 @@ async function getRecipeDetails(recipe_id) {
         servings,
         instructions,
         analyzedInstructions,
-        extendedIngredients
+        extendedIngredients,
+        likes
     } = recipe_info.data;
 
+    // normalise the like counter once, then expose it under BOTH keys
+    const likesCount = aggregateLikes ?? likes ?? 0;
+
     const recipe = {
-        id: id,
-        title: title,
-        readyInMinutes: readyInMinutes,
-        image: image,
-        aggregateLikes: aggregateLikes,
-        vegan: vegan,
-        vegetarian: vegetarian,
-        glutenFree: glutenFree,
-        servings: servings,
-        instructions: instructions,
-        analyzedInstructions: analyzedInstructions,
+        id,
+        title,
+        readyInMinutes,
+        image,
+        // unified counters
+        aggregateLikes: likesCount,
+        likes: likesCount,          // <-- added so legacy templates still work
+        vegan,
+        vegetarian,
+        glutenFree,
+        servings,
+        instructions,
+        analyzedInstructions,
         ingredients: extendedIngredients
     };
     console.log('Processed Recipe:', recipe);

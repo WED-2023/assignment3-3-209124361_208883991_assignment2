@@ -3,28 +3,28 @@
     <img 
       :src="imageUrl" 
       class="card-img-top" 
-      :alt="recipe.title"
+      :alt="fullRecipe.title"
       @error="handleImageError"
     >
     <div class="card-body">
-      <h5 class="card-title">{{ recipe.title }}</h5>
+      <h5 class="card-title">{{ fullRecipe.title }}</h5>
       <div class="recipe-meta">
-        <p v-if="recipe.readyInMinutes" class="card-text">
-          <i class="bi bi-clock"></i> {{ recipe.readyInMinutes }} minutes
+        <p v-if="fullRecipe.readyInMinutes" class="card-text">
+          <i class="bi bi-clock"></i> {{ fullRecipe.readyInMinutes }} minutes
         </p>
-        <p v-if="recipe.servings" class="card-text">
-          <i class="bi bi-people"></i> {{ recipe.servings }} servings
+        <p v-if="fullRecipe.servings" class="card-text">
+          <i class="bi bi-people"></i> {{ fullRecipe.servings }} servings
         </p>
         <p class="card-text likes">
-          <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes || 0 }} likes
+          <i class="bi bi-heart-fill text-danger"></i> {{ recipe.aggregateLikes ?? recipe.likes ?? 0 }} likes
         </p>
         <p v-if="isViewed" class="card-text viewed">
           <i class="bi bi-eye-fill text-primary"></i> Viewed
         </p>
       </div>
-      <div v-if="recipe.diets && recipe.diets.length" class="mb-2">
+      <div v-if="fullRecipe.diets && fullRecipe.diets.length" class="mb-2">
         <span 
-          v-for="diet in recipe.diets" 
+          v-for="diet in fullRecipe.diets" 
           :key="diet"
           class="badge bg-info me-1"
         >
@@ -33,7 +33,7 @@
       </div>
       <div class="d-flex justify-content-between align-items-center">
         <router-link 
-          :to="{ name: 'recipe', params: { id: recipe.id }}" 
+          :to="{ name: 'recipe', params: { id: fullRecipe.id }}" 
           class="btn btn-primary"
         >
           View Recipe
@@ -52,8 +52,9 @@
 </template>
 
 <script>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useStore } from 'vuex';
+import axios from 'axios';
 
 export default {
   name: 'RecipeCard',
@@ -72,6 +73,7 @@ export default {
     // Use a data URL for the default image to avoid 404 errors
     const defaultImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
     const imageUrl = ref(props.recipe.image || defaultImage);
+    const fullRecipe = ref(props.recipe);
 
     const handleImageError = (e) => {
       e.target.src = defaultImage;
@@ -85,9 +87,31 @@ export default {
       }
     };
 
+    const fetchFullRecipeDetails = async () => {
+      try {
+        const response = await axios.get(`/recipes/${props.recipe.id}`);
+        fullRecipe.value = response.data;
+      } catch (error) {
+        console.error('Error fetching full recipe details:', error);
+      }
+    };
+
+    // Watch for changes in the recipe prop
+    watch(() => props.recipe, (newRecipe) => {
+      fullRecipe.value = newRecipe;
+      // If we don't have likes data, fetch the full recipe details
+      if (!newRecipe.aggregateLikes && !newRecipe.likes) {
+        fetchFullRecipeDetails();
+      }
+    }, { immediate: true });
+
     onMounted(async () => {
       if (isLoggedIn.value) {
         await store.dispatch('recipes/checkRecipeViewed', props.recipe.id);
+      }
+      // If we don't have likes data, fetch the full recipe details
+      if (!props.recipe.aggregateLikes && !props.recipe.likes) {
+        fetchFullRecipeDetails();
       }
     });
 
@@ -97,7 +121,8 @@ export default {
       isViewed,
       imageUrl,
       handleImageError,
-      toggleFavorite
+      toggleFavorite,
+      fullRecipe
     };
   }
 };
