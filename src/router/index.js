@@ -60,6 +60,16 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/family-recipes',
+    name: 'FamilyRecipes',
+    component: () => import('../pages/FamilyRecipes.vue')
+  },
+  {
+    path: '/family-recipes/:id',
+    name: 'FamilyRecipeView',
+    component: () => import('../pages/FamilyRecipeView.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('../pages/NotFound.vue')
