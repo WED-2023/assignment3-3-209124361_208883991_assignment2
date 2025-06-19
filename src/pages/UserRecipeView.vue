@@ -1,34 +1,43 @@
 <template>
   <div class="user-recipe-view container py-4">
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <div v-if="mainPhoto" class="mb-3">
-          <img :src="mainPhoto" class="img-fluid rounded" alt="Recipe Image" />
-        </div>
-        <div v-if="otherPhotos.length">
-          <div class="d-flex flex-wrap gap-2">
-            <img v-for="(photo, idx) in otherPhotos" :key="idx" :src="photo" class="img-thumbnail" style="max-width: 100px; max-height: 100px;" alt="Recipe Photo" />
-          </div>
-        </div>
+    <div class="row mb-4 align-items-center">
+      <div class="col-md-8">
+        <h1 class="mb-3">{{ recipe.title }}</h1>
+        <p v-if="recipe.description" class="lead">{{ recipe.description }}</p>
       </div>
-      <div class="col-md-6">
-        <h2>{{ recipe.title }}</h2>
-        <p v-if="recipe.description">{{ recipe.description }}</p>
-        <div v-if="recipe.ingredients && recipe.ingredients.length">
-          <h5>Ingredients</h5>
-          <ul>
-            <li v-for="(ingredient, idx) in recipe.ingredients" :key="idx">{{ ingredient }}</li>
+      <div class="col-md-4 text-end" v-if="mainPhoto">
+        <img :src="mainPhoto" class="img-fluid rounded recipe-image" alt="Recipe Image" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header bg-white">
+            <h4 class="mb-0">Ingredients</h4>
+          </div>
+          <ul class="list-group list-group-flush">
+            <li v-for="(ingredient, idx) in recipe.ingredients" :key="idx" class="list-group-item">
+              {{ ingredient }}
+            </li>
           </ul>
         </div>
-        <div v-if="recipe.instructions && recipe.instructions.length">
-          <h5>Instructions</h5>
-          <ol>
-            <li v-for="(step, idx) in recipe.instructions" :key="idx">{{ step }}</li>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header bg-white">
+            <h4 class="mb-0">Instructions</h4>
+          </div>
+          <ol class="list-group list-group-numbered list-group-flush">
+            <li v-for="(step, idx) in recipe.instructions" :key="idx" class="list-group-item">
+              {{ step }}
+            </li>
           </ol>
         </div>
       </div>
     </div>
-    <button class="btn btn-secondary mt-4" @click="$router.back()">Back</button>
+    <div class="mt-4">
+      <button class="btn btn-secondary" @click="$router.back()">Back</button>
+    </div>
   </div>
 </template>
 
@@ -43,7 +52,6 @@ export default {
     const route = useRoute();
     const recipe = ref({});
     const mainPhoto = ref(null);
-    const otherPhotos = ref([]);
 
     onMounted(async () => {
       const response = await getUserRecipes();
@@ -53,23 +61,47 @@ export default {
         recipe.value = found;
         if (found.photos && found.photos.length > 0) {
           mainPhoto.value = found.photos[0];
-          otherPhotos.value = found.photos.slice(1);
         }
       }
     });
 
     return {
       recipe,
-      mainPhoto,
-      otherPhotos
+      mainPhoto
     };
   }
 };
 </script>
 
 <style scoped>
-.user-recipe-view img.img-fluid {
-  max-height: 350px;
+.user-recipe-view {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.recipe-image {
+  max-height: 260px;
   object-fit: cover;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+.lead {
+  font-size: 1.15rem;
+  color: #555;
+}
+.card-header {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+.list-group-item {
+  font-size: 1.05rem;
+}
+.list-group-numbered > .list-group-item::before {
+  background: #0d6efd;
+  color: #fff;
+  border-radius: 50%;
+  margin-right: 0.75rem;
 }
 </style> 
