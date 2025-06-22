@@ -234,7 +234,6 @@ export default {
 
       try {
         await store.dispatch('recipes/getRecipeDetails', route.params.id);
-        console.log('Recipe data received:', recipe.value);
         imageUrl.value = recipe.value?.image || defaultImage;
         
         // Record recipe view if user is logged in
