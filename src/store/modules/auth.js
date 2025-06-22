@@ -46,7 +46,29 @@ const actions = {
         throw new Error(response.data.message || 'Login failed');
       }
     } catch (error) {
-      throw error.response?.data?.message || 'Login failed';
+      // Handle different types of errors
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const message = error.response.data?.message;
+        
+        switch (status) {
+          case 401:
+            throw message || 'User does not exist or password is incorrect';
+          case 400:
+            throw message || 'Invalid login credentials';
+          case 500:
+            throw 'Server error. Please try again later.';
+          default:
+            throw message || 'Login failed. Please try again.';
+        }
+      } else if (error.request) {
+        // Network error
+        throw 'Network error. Please check your connection and try again.';
+      } else {
+        // Other error
+        throw error.message || 'Login failed. Please try again.';
+      }
     }
   },
 

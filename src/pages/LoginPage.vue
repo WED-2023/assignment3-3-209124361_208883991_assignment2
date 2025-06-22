@@ -5,6 +5,14 @@
         <div class="card shadow-sm">
           <div class="card-body p-4">
             <h2 class="text-center mb-4">Login</h2>
+            
+            <!-- Error Alert -->
+            <div v-if="loginError" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              {{ loginError }}
+              <button type="button" class="btn-close" @click="clearError" aria-label="Close"></button>
+            </div>
+            
             <form @submit.prevent="handleSubmit">
               <FormInput
                 v-model="form.username"
@@ -48,7 +56,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import FormInput from '@/components/common/FormInput.vue';
@@ -62,6 +70,7 @@ export default {
     const store = useStore();
     const router = useRouter();
     const isLoading = computed(() => store.getters.isLoading);
+    const loginError = ref('');
 
     const form = ref({
       username: '',
@@ -96,8 +105,16 @@ export default {
       return !Object.values(errors.value).some(error => error);
     };
 
+    const clearError = () => {
+      loginError.value = '';
+      store.dispatch('clearError');
+    };
+
     const handleSubmit = async () => {
       if (!validateForm()) return;
+
+      // Clear any previous errors
+      clearError();
 
       try {
         const redirectPath = router.currentRoute.value.query.redirect || '/';
@@ -106,16 +123,44 @@ export default {
           redirectPath
         });
       } catch (error) {
-        store.dispatch('setError', error.message || 'Login failed');
+        // Display the error message to the user
+        loginError.value = error || 'Login failed. Please check your credentials.';
+        
+        // Also show a toast notification
+        if (store.dispatch) {
+          store.dispatch('setError', loginError.value);
+        }
       }
     };
+
+    // Watch for global errors
+    const unwatch = store.watch(
+      (state) => state.error,
+      (error) => {
+        if (error && !loginError.value) {
+          loginError.value = error;
+        }
+      }
+    );
+
+    // Clear error when component is mounted
+    onMounted(() => {
+      clearError();
+    });
+
+    // Clean up watcher when component is unmounted
+    onUnmounted(() => {
+      unwatch();
+    });
 
     return {
       form,
       errors,
       isLoading,
+      loginError,
       validateField,
-      handleSubmit
+      handleSubmit,
+      clearError
     };
   }
 };

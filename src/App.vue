@@ -8,6 +8,20 @@
         </transition>
       </router-view>
     </main>
+    
+    <!-- Global Error Toast -->
+    <div v-if="error" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+      <div class="toast align-items-center text-bg-danger border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ error }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" @click="clearError" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
+    
     <footer class="footer mt-auto py-3 bg-light">
       <div class="container text-center">
         <span class="text-muted">© 2024 Recipe App. All rights reserved.</span>
@@ -17,12 +31,36 @@
 </template>
 
 <script>
+import { computed, watch } from 'vue';
+import { useStore } from 'vuex';
 import NavBar from '@/components/common/NavBar.vue';
 
 export default {
   name: 'App',
   components: {
     NavBar
+  },
+  setup() {
+    const store = useStore();
+    const error = computed(() => store.getters.error);
+    
+    const clearError = () => {
+      store.dispatch('clearError');
+    };
+    
+    // Auto-hide error after 5 seconds
+    watch(error, (newError) => {
+      if (newError) {
+        setTimeout(() => {
+          clearError();
+        }, 5000);
+      }
+    });
+    
+    return {
+      error,
+      clearError
+    };
   }
 };
 </script>
@@ -108,5 +146,44 @@ body {
 .form-control:focus {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Toast styles */
+.toast-container {
+  z-index: 1055;
+}
+
+.toast {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast.show {
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast.fade {
+  animation: slideOutRight 0.3s ease-in;
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }
 </style>
